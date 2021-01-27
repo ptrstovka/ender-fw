@@ -112,3 +112,5 @@ imgui.ini
 /.github
 /data
 /config
+/original/latest/*
+!/original/latest/.gitkeep
