@@ -107,7 +107,8 @@ __pycache__
 *_log.csv
 eeprom.dat
 imgui.ini
-docs/
-docker/
-.github/
-data/
+/docs
+/docker
+/.github
+/data
+/config
