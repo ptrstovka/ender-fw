@@ -60,9 +60,7 @@
 //#define BOARD_REV_1_0
 //#define BOARD_REV_1_5
 
-#if NOT_TARGET(__AVR_ATmega1280__, __AVR_ATmega2560__)
-  #error "Oops! Select 'Arduino/Genuino Mega or Mega 2560' in 'Tools > Board.'"
-#endif
+#include "env_validate.h"
 
 #ifdef BOARD_REV_1_1_TO_1_3
   #define BOARD_INFO_NAME       "Ultimaker 1.1-1.3"
@@ -174,7 +172,7 @@
   #define LCD_PINS_D6                         32
   #define LCD_PINS_D7                         30
 
-#elif BOTH(BOARD_REV_1_5, IS_ULTRA_LCD)
+#elif BOTH(BOARD_REV_1_5, HAS_WIRED_LCD)
 
   #define BEEPER_PIN                          18
 
