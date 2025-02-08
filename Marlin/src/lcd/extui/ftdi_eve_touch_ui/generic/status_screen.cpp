@@ -332,10 +332,14 @@ void StatusScreen::draw_status_message(draw_mode_t what, const char *message) {
   }
 }
 
-void StatusScreen::setStatusMessage(FSTR_P message) {
-  char buff[strlen_P(FTOP(message)) + 1];
-  strcpy_P(buff, FTOP(message));
-  setStatusMessage((const char *) buff);
+void StatusScreen::setStatusMessage(FSTR_P fmsg) {
+  #ifdef __AVR__
+    char buff[strlen_P(FTOP(fmsg)) + 1];
+    strcpy_P(buff, FTOP(fmsg));
+    setStatusMessage((const char *)buff);
+  #else
+    setStatusMessage(FTOP(fmsg));
+  #endif
 }
 
 void StatusScreen::setStatusMessage(const char *message) {
@@ -372,10 +376,10 @@ void StatusScreen::loadBitmaps() {
   // Load the bitmaps for the status screen
   using namespace Theme;
   constexpr uint32_t base = ftdi_memory_map::RAM_G;
-  CLCD::mem_write_pgm(base + TD_Icon_Info.RAMG_offset,       TD_Icon,       sizeof(TD_Icon));
-  CLCD::mem_write_pgm(base + Extruder_Icon_Info.RAMG_offset, Extruder_Icon, sizeof(Extruder_Icon));
-  CLCD::mem_write_pgm(base + Bed_Heat_Icon_Info.RAMG_offset, Bed_Heat_Icon, sizeof(Bed_Heat_Icon));
-  CLCD::mem_write_pgm(base + Fan_Icon_Info.RAMG_offset,      Fan_Icon,      sizeof(Fan_Icon));
+  CLCD::mem_write_xbm(base + TD_Icon_Info.RAMG_offset,       TD_Icon,       sizeof(TD_Icon));
+  CLCD::mem_write_xbm(base + Extruder_Icon_Info.RAMG_offset, Extruder_Icon, sizeof(Extruder_Icon));
+  CLCD::mem_write_xbm(base + Bed_Heat_Icon_Info.RAMG_offset, Bed_Heat_Icon, sizeof(Bed_Heat_Icon));
+  CLCD::mem_write_xbm(base + Fan_Icon_Info.RAMG_offset,      Fan_Icon,      sizeof(Fan_Icon));
 
   // Load fonts for internationalization
   #if ENABLED(TOUCH_UI_USE_UTF8)
@@ -413,7 +417,7 @@ bool StatusScreen::onTouchEnd(uint8_t tag) {
   using namespace ExtUI;
 
   switch (tag) {
-    #if ENABLED(SDSUPPORT)
+    #if HAS_MEDIA
       case 3: GOTO_SCREEN(FilesScreen); break;
     #endif
     case 4:

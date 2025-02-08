@@ -30,7 +30,7 @@
 
 //#include "../../lcdprint.h"
 #include "lcdprint_dwin.h"
-#include "../../fontutils.h"
+#include "../../utf8.h"
 #include "../../../libs/numtostr.h"
 #include "../../marlinui.h"
 
@@ -39,7 +39,7 @@
 #include "../../../module/temperature.h"
 #include "../../../module/printcounter.h"
 
-#if ENABLED(SDSUPPORT)
+#if HAS_MEDIA
   #include "../../../libs/duration_t.h"
 #endif
 
@@ -195,7 +195,7 @@ void MarlinUI::draw_status_message(const bool blink) {
     }
     const bool hash_changed = hash != old_hash;
     old_hash = hash;
-    return hash_changed || !ui.did_first_redraw;
+    return hash_changed || !did_first_redraw;
   };
 
   #if ENABLED(STATUS_MESSAGE_SCROLLING)
@@ -213,7 +213,7 @@ void MarlinUI::draw_status_message(const bool blink) {
         lcd_put_u8str(status_message);
 
         // Fill the rest with spaces
-        while (slen < max_status_chars) { lcd_put_wchar(' '); ++slen; }
+        while (slen < max_status_chars) { lcd_put_u8str(F(" ")); ++slen; }
       }
     }
     else {
@@ -227,10 +227,10 @@ void MarlinUI::draw_status_message(const bool blink) {
 
       // If the string doesn't completely fill the line...
       if (rlen < max_status_chars) {
-        lcd_put_wchar('.');                   // Always at 1+ spaces left, draw a dot
+        lcd_put_u8str(F("."));                   // Always at 1+ spaces left, draw a dot
         uint8_t chars = max_status_chars - rlen;  // Amount of space left in characters
         if (--chars) {                        // Draw a second dot if there's space
-          lcd_put_wchar('.');
+          lcd_put_u8str(F("."));
           if (--chars)
             lcd_put_u8str_max(status_message, chars); // Print a second copy of the message
         }
@@ -254,7 +254,7 @@ void MarlinUI::draw_status_message(const bool blink) {
       lcd_put_u8str_max(status_message, max_status_chars);
 
       // Fill the rest with spaces if there are missing spaces
-      while (slen < max_status_chars) { lcd_put_wchar(' '); ++slen; }
+      while (slen < max_status_chars) { lcd_put_u8str(F(" ")); ++slen; }
     }
 
   #endif
@@ -274,7 +274,7 @@ void MarlinUI::draw_status_message(const bool blink) {
 
       dwin_font.solid = false;
       dwin_font.fg = Color_White;
-      dwin_string.set("E");
+      dwin_string.set('E');
       dwin_string.add('1' + extruder);
       dwin_string.add(' ');
       dwin_string.add(i16tostr3rj(thermalManager.degHotend(extruder)));
@@ -282,7 +282,7 @@ void MarlinUI::draw_status_message(const bool blink) {
       if (get_blink() || !thermalManager.heater_idle[thermalManager.idle_index_for_id(extruder)].timed_out)
         dwin_string.add(i16tostr3rj(thermalManager.degTargetHotend(extruder)));
       else
-        dwin_string.add(PSTR("    "));
+        dwin_string.add(F("    "));
 
       lcd_moveto(LCD_WIDTH - dwin_string.length, row);
       lcd_put_dwin_string();
@@ -410,8 +410,7 @@ void MarlinUI::draw_status_message(const bool blink) {
       const dwin_coord_t by = (row * MENU_LINE_HEIGHT) + MENU_FONT_HEIGHT + EXTRA_ROW_HEIGHT / 2;
       DWIN_Draw_String(true, font16x32, Color_Yellow, Color_Bg_Black, (LCD_PIXEL_WIDTH - vallen * 16) / 2, by, S(dwin_string.string()));
 
-      extern screenFunc_t _manual_move_func_ptr;
-      if (ui.currentScreen != _manual_move_func_ptr && !ui.external_control) {
+      if (ui.can_show_slider()) {
 
         const dwin_coord_t slider_length = LCD_PIXEL_WIDTH - TERN(DWIN_MARLINUI_LANDSCAPE, 120, 20),
                            slider_height = 16,
@@ -450,7 +449,7 @@ void MarlinUI::draw_status_message(const bool blink) {
     if (yes) draw_boxed_string(true, yes,  yesno);
   }
 
-  #if ENABLED(SDSUPPORT)
+  #if HAS_MEDIA
 
     void MenuItem_sdbase::draw(const bool sel, const uint8_t row, FSTR_P const, CardReader &theCard, const bool isDir) {
       if (mark_as_selected(row, sel)) {
@@ -470,7 +469,7 @@ void MarlinUI::draw_status_message(const bool blink) {
       }
     }
 
-  #endif // SDSUPPORT
+  #endif // HAS_MEDIA
 
   #if ENABLED(AUTO_BED_LEVELING_UBL)
 
@@ -540,11 +539,11 @@ void MarlinUI::draw_status_message(const bool blink) {
       lcd_put_u8str(ftostr52(lpos.y));
 
       // Print plot position
-      dwin_string.set("(");
+      dwin_string.set('(');
       dwin_string.add(i8tostr3rj(x_plot));
-      dwin_string.add(",");
+      dwin_string.add(',');
       dwin_string.add(i8tostr3rj(y_plot));
-      dwin_string.add(")");
+      dwin_string.add(')');
       lcd_moveto(
         TERN(DWIN_MARLINUI_LANDSCAPE, ((x_offset + x_map_pixels) / MENU_FONT_WIDTH) + 2, LCD_WIDTH - dwin_string.length),
         TERN(DWIN_MARLINUI_LANDSCAPE, LCD_HEIGHT - 2, ((y_offset + y_map_pixels) / MENU_LINE_HEIGHT) + 1)
@@ -556,7 +555,7 @@ void MarlinUI::draw_status_message(const bool blink) {
       if (!isnan(bedlevel.z_values[x_plot][y_plot]))
         dwin_string.add(ftostr43sign(bedlevel.z_values[x_plot][y_plot]));
       else
-        dwin_string.add(PSTR(" -----"));
+        dwin_string.add(F(" -----"));
       lcd_moveto(
         TERN(DWIN_MARLINUI_LANDSCAPE, ((x_offset + x_map_pixels) / MENU_FONT_WIDTH) + 2, LCD_WIDTH - dwin_string.length),
         TERN(DWIN_MARLINUI_LANDSCAPE, LCD_HEIGHT - 1, ((y_offset + y_map_pixels) / MENU_LINE_HEIGHT) + 2)

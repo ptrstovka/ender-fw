@@ -25,7 +25,7 @@
 #if HAS_GRAPHICAL_TFT
 
 #include "tft_string.h"
-#include "../fontutils.h"
+#include "../utf8.h"
 #include "../marlinui.h"
 
 //#define DEBUG_TFT_FONT
@@ -88,22 +88,22 @@ void TFT_String::set() {
  * Add a string, applying substitutions for the following characters:
  *
  *   $ displays the string given by fstr or cstr
- *   = displays  '0'....'10' for indexes 0 - 10
+ *   { displays  '0'....'10' for indexes 0 - 10
  *   ~ displays  '1'....'11' for indexes 0 - 10
  *   * displays 'E1'...'E11' for indexes 0 - 10 (By default. Uses LCD_FIRST_TOOL)
  *   @ displays an axis name such as XYZUVW, or E for an extruder
  */
 void TFT_String::add(const char *tpl, const int8_t index, const char *cstr/*=nullptr*/, FSTR_P const fstr/*=nullptr*/) {
-  wchar_t wchar;
+  lchar_t wc;
 
   while (*tpl) {
-    tpl = get_utf8_value_cb(tpl, read_byte_ram, &wchar);
-    if (wchar > 255) wchar |= 0x0080;
-    const uint8_t ch = uint8_t(wchar & 0x00FF);
+    tpl = get_utf8_value_cb(tpl, read_byte_ram, wc);
+    if (wc > 255) wc |= 0x0080;
+    const uint8_t ch = uint8_t(wc & 0x00FF);
 
-    if (ch == '=' || ch == '~' || ch == '*') {
+    if (ch == '{' || ch == '~' || ch == '*') {
       if (index >= 0) {
-        int8_t inum = index + ((ch == '=') ? 0 : LCD_FIRST_TOOL);
+        int8_t inum = index + ((ch == '{') ? 0 : LCD_FIRST_TOOL);
         if (ch == '*') add_character('E');
         if (inum >= 10) { add_character('0' + (inum / 10)); inum %= 10; }
         add_character('0' + inum);
@@ -124,11 +124,11 @@ void TFT_String::add(const char *tpl, const int8_t index, const char *cstr/*=nul
 }
 
 void TFT_String::add(const char *cstr, uint8_t max_len/*=MAX_STRING_LENGTH*/) {
-  wchar_t wchar;
+  lchar_t wc;
   while (*cstr && max_len) {
-    cstr = get_utf8_value_cb(cstr, read_byte_ram, &wchar);
-    if (wchar > 255) wchar |= 0x0080;
-    const uint8_t ch = uint8_t(wchar & 0x00FF);
+    cstr = get_utf8_value_cb(cstr, read_byte_ram, wc);
+    if (wc > 255) wc |= 0x0080;
+    const uint8_t ch = uint8_t(wc & 0x00FF);
     add_character(ch);
     max_len--;
   }

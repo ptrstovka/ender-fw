@@ -25,7 +25,7 @@
 #if IS_DWIN_MARLINUI
 
 #include "dwin_string.h"
-//#include "../../fontutils.h"
+//#include "../../utf8.h"
 
 char DWIN_String::data[];
 uint16_t DWIN_String::span;
@@ -44,22 +44,22 @@ uint8_t read_byte(const uint8_t *byte) { return *byte; }
  * Add a string, applying substitutions for the following characters:
  *
  *   $ displays the clipped string given by fstr or cstr
- *   = displays  '0'....'10' for indexes 0 - 10
+ *   { displays  '0'....'10' for indexes 0 - 10
  *   ~ displays  '1'....'11' for indexes 0 - 10
  *   * displays 'E1'...'E11' for indexes 0 - 10 (By default. Uses LCD_FIRST_TOOL)
  *   @ displays an axis name such as XYZUVW, or E for an extruder
  */
 void DWIN_String::add(const char *tpl, const int8_t index, const char *cstr/*=nullptr*/, FSTR_P const fstr/*=nullptr*/) {
-  wchar_t wchar;
+  lchar_t wc;
 
   while (*tpl) {
-    tpl = get_utf8_value_cb(tpl, read_byte, &wchar);
-    if (wchar > 255) wchar |= 0x0080;
-    const uint8_t ch = uint8_t(wchar & 0x00FF);
+    tpl = get_utf8_value_cb(tpl, read_byte, wc);
+    if (wc > 255) wc |= 0x0080;
+    const uint8_t ch = uint8_t(wc & 0x00FF);
 
-    if (ch == '=' || ch == '~' || ch == '*') {
+    if (ch == '{' || ch == '~' || ch == '*') {
       if (index >= 0) {
-        int8_t inum = index + ((ch == '=') ? 0 : LCD_FIRST_TOOL);
+        int8_t inum = index + ((ch == '{') ? 0 : LCD_FIRST_TOOL);
         if (ch == '*') add_character('E');
         if (inum >= 10) { add_character('0' + (inum / 10)); inum %= 10; }
         add_character('0' + inum);
@@ -80,32 +80,32 @@ void DWIN_String::add(const char *tpl, const int8_t index, const char *cstr/*=nu
 }
 
 void DWIN_String::add(const char *cstr, uint8_t max_len/*=MAX_STRING_LENGTH*/) {
-  wchar_t wchar;
+  lchar_t wc;
   while (*cstr && max_len) {
-    cstr = get_utf8_value_cb(cstr, read_byte, &wchar);
+    cstr = get_utf8_value_cb(cstr, read_byte, wc);
     /*
-    if (wchar > 255) wchar |= 0x0080;
-    uint8_t ch = uint8_t(wchar & 0x00FF);
+    if (wc > 255) wc |= 0x0080;
+    const uint8_t ch = uint8_t(wc & 0x00FF);
     add_character(ch);
     */
-    add(wchar);
+    add(wc);
     max_len--;
   }
   eol();
 }
 
-void DWIN_String::add(const wchar_t character) {
+void DWIN_String::add(const lchar_t &wc) {
   int ret;
   size_t idx = 0;
   dwin_charmap_t pinval;
   dwin_charmap_t *copy_address = nullptr;
-  pinval.uchar = character;
+  pinval.uchar = wc;
   pinval.idx = -1;
 
   // For 8-bit ASCII just print the single character
   char str[] = { '?', 0 };
-  if (character < 255) {
-    str[0] = (char)character;
+  if (wc < 255) {
+    str[0] = (char)wc;
   }
   else {
     copy_address = nullptr;

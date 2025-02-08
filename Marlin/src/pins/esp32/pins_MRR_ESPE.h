@@ -51,12 +51,13 @@
 //
 // Enable I2S stepper stream
 //
-#define I2S_STEPPER_STREAM
-#define I2S_WS                                26
-#define I2S_BCK                               25
-#define I2S_DATA                              27
-#if ENABLED(LIN_ADVANCE)
-  #error "I2S stream is currently incompatible with LIN_ADVANCE."
+#ifndef I2S_STEPPER_STREAM
+  #define I2S_STEPPER_STREAM
+#endif
+#if ENABLED(I2S_STEPPER_STREAM)
+  #define I2S_WS                              26
+  #define I2S_BCK                             25
+  #define I2S_DATA                            27
 #endif
 
 //
@@ -103,7 +104,7 @@
 // Heaters / Fans
 //
 #define HEATER_0_PIN                         145  // 2
-#define FAN_PIN                              146  // 15
+#define FAN0_PIN                             146  // 15
 #define HEATER_BED_PIN                       144  // 4
 
 #define CONTROLLER_FAN_PIN                   147
@@ -120,14 +121,14 @@
 #define SDSS                                   5
 #define USES_SHARED_SPI                           // SPI is shared by SD card with TMC SPI drivers
 
-//////////////////////////
-// LCDs and Controllers //
-//////////////////////////
+//
+// LCD / Controller
+//
 
 #if HAS_WIRED_LCD
 
   #define LCD_PINS_RS                         13
-  #define LCD_PINS_ENABLE                     17
+  #define LCD_PINS_EN                         17
   #define LCD_PINS_D4                         16
 
   #if ENABLED(CR10_STOCKDISPLAY)
